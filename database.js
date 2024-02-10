@@ -10,7 +10,8 @@ console.log('Connecté à la base de données SQLite.');
 db.run(`CREATE TABLE IF NOT EXISTS personnes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nom TEXT NOT NULL,
-    adresse TEXT
+    adresse TEXT,
+    image BLOB
 )`, (err) => {
 if (err) {
 console.error(err.message);

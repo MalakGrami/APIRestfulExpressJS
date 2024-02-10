@@ -1,10 +1,40 @@
 const express = require('express');
+const multer = require('multer');
 const db = require('./database');
 const app = express();
-app.use(express.json());
 const PORT = 3000;
 
-// Route pour récupérer toutes les personnes
+const upload = multer();
+
+// creating a new person with form data
+app.post('/personnes', upload.single('image'), (req, res) => {
+    const nom = req.body.nom;
+    const adresse = req.body.adresse;
+    const image = req.file; // Get the uploaded image file
+
+   
+    if (!image) {
+        return res.status(400).json({ error: 'Image field is required' });
+    }
+
+    const imageBuffer = image.buffer; // Get the image buffer
+
+    // Insert the new person with the image data into the database
+    db.run(`INSERT INTO personnes (nom, adresse, image) VALUES (?, ?, ?)`, [nom, adresse, imageBuffer], function(err) {
+        if (err) {
+            return res.status(400).json({ error: err.message });
+        }
+        res.json({
+            message: 'success',
+            data: {
+                id: this.lastID
+            }
+        });
+    });
+});
+
+
+// Route to retrieve all persons
 app.get('/personnes', (req, res) => {
     db.all("SELECT * FROM personnes", [], (err, rows) => {
         if (err) {
@@ -13,12 +43,26 @@ app.get('/personnes', (req, res) => {
             });
             return;
         }
+
+        // convert image buffer to base64 string
+        const formattedRows = rows.map(row => {
+            const base64Image = row.image ? `data:image/jpeg;base64,${Buffer.from(row.image).toString('base64')}` : null;
+            return {
+                id: row.id,
+                nom: row.nom,
+                adresse: row.adresse,
+                imageBase64: base64Image 
+            };
+        });
+
         res.json({
             "message": "success",
-            "data": rows
+            "data": formattedRows
         });
     });
 });
+
+
 
 // Route pour récupérer une personne par ID
 app.get('/personnes/:id', (req, res) => {
@@ -30,31 +74,32 @@ app.get('/personnes/:id', (req, res) => {
             });
             return;
         }
-        res.json({
-            "message": "success",
-            "data": row
-        });
-    });
-});
-
-// Route pour créer une nouvelle personne
-app.post('/personnes', (req, res) => {
-    const { nom, adresse } = req.body; // Récupérer le nom et l'adresse depuis le corps de la requête
-    db.run(`INSERT INTO personnes (nom, adresse) VALUES (?, ?)`, [nom, adresse], function(err) {
-        if (err) {
-            res.status(400).json({
-                "error": err.message
+        
+        
+        if (!row) {
+            res.status(404).json({
+                "error": "Person not found"
             });
             return;
         }
+
+        // Convert image buffer to base64 string
+        const base64Image = row.image ? `data:image/jpeg;base64,${Buffer.from(row.image).toString('base64')}` : null;
+
         res.json({
             "message": "success",
             "data": {
-                id: this.lastID
+                id: row.id,
+                nom: row.nom,
+                adresse: row.adresse,
+                imageBase64: base64Image 
             }
         });
     });
 });
+
+
+
 
 // Route pour mettre à jour une personne
 app.put('/personnes/:id', (req, res) => {
