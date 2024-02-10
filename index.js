@@ -10,14 +10,14 @@ const upload = multer();
 app.post('/personnes', upload.single('image'), (req, res) => {
     const nom = req.body.nom;
     const adresse = req.body.adresse;
-    const image = req.file; // Get the uploaded image file
+    const image = req.file; 
 
    
     if (!image) {
         return res.status(400).json({ error: 'Image field is required' });
     }
 
-    const imageBuffer = image.buffer; // Get the image buffer
+    const imageBuffer = image.buffer; 
 
     // Insert the new person with the image data into the database
     db.run(`INSERT INTO personnes (nom, adresse, image) VALUES (?, ?, ?)`, [nom, adresse, imageBuffer], function(err) {
